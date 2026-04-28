@@ -13,6 +13,7 @@ import {
   deleteTask as dbDeleteTask,
   getContributionHeatmap,
   getCurrentUser,
+  getUserTaskLogs,
   type Database,
   supabase,
 } from '@/lib/database/client';
@@ -74,9 +75,17 @@ export const useDataStore = create<DataState>()(
           const { data: categories } = await getCategories();
           
           let heatmap: any[] = [];
+          let serverTaskLogs: TaskLog[] = [];
           if (user) {
             const heatmapResult = await getContributionHeatmap(user.id, 365);
             heatmap = heatmapResult || [];
+            const taskLogsResult = await getUserTaskLogs(user.id, 365);
+            serverTaskLogs = taskLogsResult.map((log: any) => ({
+              id: log.id,
+              task_id: log.task_id,
+              completed_at: log.completed_at,
+              is_completed: log.is_completed,
+            }));
           }
 
           const siloTasks: Record<string, Task[]> = {};
@@ -94,6 +103,7 @@ export const useDataStore = create<DataState>()(
           set({
             silos: categories || [],
             tasks: siloTasks,
+            taskLogs: serverTaskLogs || [],
             heatmapData: heatmap || [],
             isLoading: false,
             isSyncing: false,

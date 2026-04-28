@@ -374,6 +374,25 @@ export async function getContributionHeatmap(userId: string, days: number = 365)
   return result;
 }
 
+export async function getUserTaskLogs(userId: string, days: number = 365) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const { data: logs } = await supabase
+    .from(tables.task_logs)
+    .select(`
+      id,
+      task_id,
+      completed_at,
+      is_completed
+    `)
+    .eq('is_completed', true)
+    .gte('completed_at', startDate.toISOString())
+    .order('completed_at', { ascending: true });
+
+  return logs || [];
+}
+
 export function subscribeToCategories(callback: (payload: any) => void) {
   return supabase
     .channel('categories')
