@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, Sparkles, Loader2, WifiOff } from 'lucide-react';
@@ -18,7 +18,7 @@ export default function SiloPage() {
   const siloId = params.id as string;
   
   const [showConfetti, setShowConfetti] = useState(false);
-  const [prevProgress, setPrevProgress] = useState(0);
+  const prevProgressRef = useRef(0);
 
   const { user, initialize } = useAuthStore();
   const {
@@ -42,16 +42,18 @@ export default function SiloPage() {
   const siloProgress = allSilosWithProgress.find(s => s.id === siloId);
 
   useEffect(() => {
-    if (siloProgress && siloProgress.progress > prevProgress && prevProgress < 100) {
+    if (siloProgress && siloProgress.progress > prevProgressRef.current && prevProgressRef.current < 100 && siloProgress.progress === 100) {
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 100);
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 50, 50]);
+      }
     }
-    setPrevProgress(siloProgress?.progress || 0);
+    prevProgressRef.current = siloProgress?.progress || 0;
   }, [siloProgress?.progress]);
 
   useEffect(() => {
     if (showConfetti) {
-      setTimeout(() => setShowConfetti(false), 3000);
+      setTimeout(() => setShowConfetti(false), 1500);
     }
   }, [showConfetti]);
 
@@ -63,20 +65,20 @@ export default function SiloPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   if (!silo) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <p className="mb-4 text-muted-foreground">Silo not found</p>
           <button
             onClick={() => router.push('/')}
-            className="text-primary hover:underline"
+            className="text-emerald-500 hover:underline"
           >
             Go back to Lobby
           </button>
@@ -123,12 +125,12 @@ export default function SiloPage() {
         <header className="mb-6 flex items-center gap-4">
           <button
             onClick={() => router.push('/')}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-muted transition-colors hover:bg-muted/80"
+            className="flex h-10 w-10 items-center justify-center rounded-full glass-card border border-white/10 transition-all hover:border-white/20 hover:bg-slate-700/50"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
           </button>
           <div
-            className="flex flex-1 items-center gap-3 rounded-xl p-3"
+            className="flex flex-1 items-center gap-3 rounded-xl p-3 glass-card"
             style={{ backgroundColor: `${silo.color_theme}15` }}
           >
             <div
@@ -138,8 +140,8 @@ export default function SiloPage() {
               <Icon className="h-5 w-5" style={{ color: silo.color_theme }} />
             </div>
             <div className="flex-1">
-              <h1 className="text-lg font-semibold">{silo.name}</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-lg font-semibold text-foreground">{silo.name}</h1>
+              <p className="text-sm text-muted-foreground font-mono">
                 {completedCount}/{tasksForSilo.length} completed
               </p>
             </div>
@@ -149,13 +151,17 @@ export default function SiloPage() {
           </div>
         </header>
 
-        <div className="mb-6 h-3 rounded-full bg-muted overflow-hidden">
+        <div className="mb-6 h-3 rounded-full bg-slate-800/50 overflow-hidden">
           <motion.div
             className="h-full rounded-full"
-            style={{ backgroundColor: silo.color_theme }}
+            style={{ 
+              background: progress === 100 
+                ? 'linear-gradient(90deg, #6366F1, #10B981)'
+                : `linear-gradient(90deg, ${silo.color_theme}, ${silo.color_theme}dd)`
+            }}
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
           />
         </div>
 
@@ -163,11 +169,11 @@ export default function SiloPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 flex items-center justify-center gap-2 rounded-xl bg-green-500/20 py-4 text-green-600 dark:text-green-400"
+            className="mb-6 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-indigo-500/20 py-4 border border-emerald-500/30"
           >
-            <Sparkles className="h-5 w-5" />
-            <span className="font-semibold">Silo Complete!</span>
-            <Sparkles className="h-5 w-5" />
+            <Sparkles className="h-5 w-5 text-emerald-400" />
+            <span className="font-semibold text-emerald-400">Silo Complete!</span>
+            <Sparkles className="h-5 w-5 text-emerald-400" />
           </motion.div>
         )}
 
@@ -176,16 +182,16 @@ export default function SiloPage() {
         </section>
 
         <section>
-          <h2 className="mb-4 text-sm font-medium text-muted-foreground">Tasks</h2>
+          <h2 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">Tasks</h2>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
             </div>
           ) : tasksForSilo.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-input py-12 text-center"
+              className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 py-12 text-center glass-card"
             >
               <p className="text-muted-foreground">No tasks yet</p>
               <p className="mt-1 text-sm text-muted-foreground">Add your first task above</p>

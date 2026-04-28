@@ -13,7 +13,6 @@ interface HeatmapProps {
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function getLevel(count: number, max: number): number {
   if (max === 0 || count === 0) return 0;
@@ -24,16 +23,12 @@ function getLevel(count: number, max: number): number {
   return 4;
 }
 
-function getColor(level: number, isDark: boolean): string {
-  const colors = isDark
-    ? ['#1a1a1a', '#064e3b', '#047857', '#10b981', '#34d399']
-    : ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+function getColor(level: number): string {
+  const colors = ['#1e293b', '#1e3a5f', '#6366f1', '#10b981', '#34d399'];
   return colors[level];
 }
 
 export function ContributionHeatmap({ data }: HeatmapProps) {
-  const isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
   const { weeks, maxCount } = useMemo(() => {
     const today = new Date();
     const startDate = new Date(today);
@@ -80,7 +75,7 @@ export function ContributionHeatmap({ data }: HeatmapProps) {
             <div
               key={level}
               className="h-3 w-3 rounded-sm"
-              style={{ backgroundColor: getColor(level, isDark) }}
+              style={{ backgroundColor: getColor(level) }}
             />
           ))}
           <span>More</span>
@@ -102,8 +97,8 @@ export function ContributionHeatmap({ data }: HeatmapProps) {
                   <div
                     key={day.date}
                     title={`${day.date}: ${day.count} tasks`}
-                    className="h-3 w-3 rounded-sm transition-colors hover:ring-2 hover:ring-ring"
-                    style={{ backgroundColor: getColor(getLevel(day.count, maxCount), isDark) }}
+                    className="h-3 w-3 rounded-sm transition-all hover:ring-2 hover:ring-emerald-500/50"
+                    style={{ backgroundColor: getColor(getLevel(day.count, maxCount)) }}
                   />
                 ))}
               </div>

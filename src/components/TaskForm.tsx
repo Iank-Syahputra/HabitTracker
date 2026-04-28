@@ -24,7 +24,7 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit}
-      className="rounded-xl border border-input bg-card p-4"
+      className="rounded-xl glass-card border border-white/10 p-4"
     >
       <div className="flex gap-2">
         <input
@@ -32,16 +32,16 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Add a new task..."
-          className="flex-1 rounded-lg border-0 bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="flex-1 rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
         />
-        <div className="flex rounded-lg border border-input overflow-hidden">
+        <div className="flex rounded-lg border border-white/10 overflow-hidden">
           <button
             type="button"
             onClick={() => setTaskType('daily')}
-            className={`flex items-center gap-1 px-3 py-2 text-sm transition-colors ${
+            className={`flex items-center gap-1 px-3 py-2 text-sm transition-all ${
               taskType === 'daily' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-background text-muted-foreground hover:bg-muted'
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white' 
+                : 'bg-slate-800/50 text-muted-foreground hover:bg-slate-700/50'
             }`}
           >
             <Clock className="h-4 w-4" />
@@ -49,10 +49,10 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
           <button
             type="button"
             onClick={() => setTaskType('checklist')}
-            className={`flex items-center gap-1 px-3 py-2 text-sm transition-colors ${
+            className={`flex items-center gap-1 px-3 py-2 text-sm transition-all ${
               taskType === 'checklist' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-background text-muted-foreground hover:bg-muted'
+                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white' 
+                : 'bg-slate-800/50 text-muted-foreground hover:bg-slate-700/50'
             }`}
           >
             <ListChecks className="h-4 w-4" />
@@ -61,7 +61,7 @@ export function TaskForm({ onSubmit }: TaskFormProps) {
         <button
           type="submit"
           disabled={!title.trim()}
-          className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-white transition-all hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
         >
           <Plus className="h-5 w-5" />
         </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Flame, X, Settings, Edit2, Trash2, LogOut, Loader2, WifiOff } from 'lucide-react';
@@ -19,6 +19,7 @@ export function Lobby() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [heatmapExpanded, setHeatmapExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const prevProgressRef = useRef<Record<string, number>>({});
 
   const { user, loading: authLoading, signOut, initialize } = useAuthStore();
   const {
@@ -32,7 +33,6 @@ export function Lobby() {
     isLoading,
     isSyncing,
     initialize: initData,
-    syncFromServer,
   } = useDataStore();
 
   const silosWithProgress = getSilosWithProgress();
@@ -50,6 +50,19 @@ export function Lobby() {
       initData();
     }
   }, [user]);
+
+  useEffect(() => {
+    silosWithProgress.forEach((silo) => {
+      const prevProgress = prevProgressRef.current[silo.id];
+      if (prevProgress !== undefined && silo.progress === 100 && prevProgress < 100) {
+        setShowConfetti(true);
+        if (navigator.vibrate) {
+          navigator.vibrate([50, 50, 50]);
+        }
+      }
+      prevProgressRef.current[silo.id] = silo.progress;
+    });
+  }, [silosWithProgress]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -94,7 +107,7 @@ export function Lobby() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     );
   }
@@ -114,28 +127,28 @@ export function Lobby() {
       <div className="mx-auto max-w-2xl px-4 py-6">
         <header className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">SynergyHub</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">SynergyHub</h1>
+            <p className="text-sm text-muted-foreground font-mono">
               {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {!isOnline && (
-              <div className="flex items-center gap-1 rounded-full bg-orange-100 px-3 py-2 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+              <div className="flex items-center gap-1 rounded-full bg-orange-500/20 px-3 py-2 text-orange-400 border border-orange-500/30">
                 <WifiOff className="h-4 w-4" />
               </div>
             )}
-            {isSyncing && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-            <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 shadow-sm">
+            {isSyncing && <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />}
+            <div className="flex items-center gap-2 rounded-full glass-card px-4 py-2 border border-white/10">
               <Flame className="h-5 w-5 text-orange-500" />
-              <span className="font-bold">{streak}</span>
+              <span className="font-bold font-mono text-foreground">{streak}</span>
             </div>
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-muted transition-colors hover:bg-muted/80"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/50 border border-white/10 transition-colors hover:bg-slate-700/50"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="h-5 w-5 text-muted-foreground" />
               </button>
               {menuOpen && (
                 <>
@@ -143,11 +156,11 @@ export function Lobby() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute right-0 top-12 z-50 w-48 rounded-xl border border-input bg-card p-2 shadow-lg"
+                    className="absolute right-0 top-12 z-50 w-48 rounded-xl glass-card border border-white/10 p-2 shadow-xl"
                   >
                     <button
                       onClick={handleSignOut}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/20 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign Out
@@ -160,21 +173,21 @@ export function Lobby() {
         </header>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-sm font-medium text-muted-foreground">Your Silos</h2>
+          <h2 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">Your Silos</h2>
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
             </div>
           ) : silosWithProgress.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-input py-16 text-center"
+              className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 py-16 text-center glass-card"
             >
               <p className="mb-4 text-muted-foreground">No silos yet</p>
               <button
                 onClick={() => setIsFormOpen(true)}
-                className="flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 font-medium text-white transition-all hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-105"
               >
                 <Plus className="h-5 w-5" />
                 Create Your First Silo
@@ -187,7 +200,7 @@ export function Lobby() {
                   key={silo.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.1, ease: [0.4, 0, 0.2, 1] }}
                   className="group relative"
                 >
                   <SiloCard
@@ -205,16 +218,16 @@ export function Lobby() {
                         setEditingSilo(silo);
                         setIsFormOpen(true);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/80 shadow-sm transition-colors hover:bg-muted"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 border border-white/10 shadow-sm transition-colors hover:bg-slate-700"
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-4 w-4 text-muted-foreground" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteSilo(silo);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/80 shadow-sm transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 border border-white/10 shadow-sm transition-colors hover:bg-destructive/20 hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -225,7 +238,7 @@ export function Lobby() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 onClick={() => setIsFormOpen(true)}
-                className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-input py-8 transition-colors hover:border-primary/50 hover:bg-muted/30"
+                className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 py-8 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/5"
               >
                 <Plus className="mb-2 h-8 w-8 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Add Silo</span>
@@ -239,7 +252,7 @@ export function Lobby() {
             onClick={() => setHeatmapExpanded(!heatmapExpanded)}
             className="mb-4 flex w-full items-center justify-between"
           >
-            <h2 className="text-sm font-medium text-muted-foreground">Contribution Activity</h2>
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Contribution Activity</h2>
             <svg
               className={`h-4 w-4 text-muted-foreground transition-transform ${heatmapExpanded ? 'rotate-180' : ''}`}
               fill="none"
@@ -255,7 +268,7 @@ export function Lobby() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden rounded-xl border border-input bg-card p-4"
+                className="overflow-hidden rounded-xl glass-card border border-white/10 p-4"
               >
                 <ContributionHeatmap data={heatmapData} />
               </motion.div>
