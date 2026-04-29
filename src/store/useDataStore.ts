@@ -50,6 +50,40 @@ interface DataState {
 
 const getToday = () => new Date().toISOString().split('T')[0];
 
+function getLocalDateString(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function calculateStreak(completedDates: string[], totalTasks: number): number {
+  if (completedDates.length === 0 || totalTasks === 0) return 0;
+  
+  const sortedDates = [...completedDates].sort().reverse();
+  const today = getToday();
+  
+  let streak = 0;
+  let currentDate = new Date(today);
+  const todayStr = today;
+  
+  const hasCompletedToday = sortedDates.includes(todayStr);
+  if (!hasCompletedToday) {
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+  
+  for (let i = 0; i < sortedDates.length; i++) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const index = sortedDates.indexOf(dateStr);
+    
+    if (index !== -1) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  
+  return streak;
+}
+
 export const useDataStore = create<DataState>()(
   persist(
     (set, get) => ({
@@ -136,6 +170,7 @@ export const useDataStore = create<DataState>()(
               icon: silo.icon,
               color_theme: silo.color_theme,
               position: state.silos.length,
+              silo_type: silo.silo_type || 'recurring',
             });
             await get().syncFromServer();
           } catch (error) {
@@ -184,15 +219,34 @@ export const useDataStore = create<DataState>()(
         
         if (state.isOnline) {
           try {
-            await dbCreateTask({
+            const taskData: {
+              category_id: string;
+              title: string;
+              task_type?: 'daily' | 'checklist';
+              priority?: 'high' | 'medium' | 'low';
+              position: number;
+            } = {
               category_id: siloId,
               title: task.title,
-              task_type: task.task_type,
+              task_type: 'daily',
+              priority: task.priority || 'medium',
               position: task.order,
-            });
-            await get().syncFromServer();
-          } catch (error) {
-            console.error('Failed to create task on server:', error);
+            };
+            console.log('=== DEBUG TASK CREATE ===');
+            console.log('siloId:', siloId);
+            console.log('taskData:', JSON.stringify(taskData));
+            
+            const result = await dbCreateTask(taskData);
+            console.log('Result:', JSON.stringify(result, null, 2));
+            
+            if (result.error) {
+              console.error('DB Error:', result.error.message, result.error.details);
+            } else {
+              console.log('✅ Task saved to DB successfully');
+              await get().syncFromServer();
+            }
+          } catch (error: any) {
+            console.error('❌ Failed to create task:', error?.message || error);
           }
         }
       },
@@ -267,7 +321,6 @@ export const useDataStore = create<DataState>()(
         if (state.isOnline) {
           try {
             await dbToggleTaskComplete(taskId);
-            await get().syncFromServer();
           } catch (error) {
             console.error('Failed to toggle task on server:', error);
           }
@@ -276,7 +329,6 @@ export const useDataStore = create<DataState>()(
 
       getSilosWithProgress: () => {
         const state = get();
-        const today = getToday();
         
         if (!state.silos || !Array.isArray(state.silos)) {
           return [];
@@ -284,6 +336,7 @@ export const useDataStore = create<DataState>()(
         
         return state.silos.map((silo) => {
           const siloTasks = Array.isArray(state.tasks[silo.id]) ? state.tasks[silo.id] : [];
+          const siloType = (silo as any).silo_type || 'recurring';
           
           if (!siloTasks || !Array.isArray(siloTasks)) {
             return {
@@ -292,17 +345,56 @@ export const useDataStore = create<DataState>()(
               completedCount: 0,
               totalCount: 0,
               tasks: [],
+              streak: 0,
+              completedDates: [],
             };
           }
           
-          const completedTodayCount = siloTasks.filter((task) => 
-            state.taskLogs.some(
+          const today = getToday();
+          
+          const tasksWithStatus = siloTasks.map((task) => ({
+            ...task,
+            isCompletedToday: state.taskLogs.some(
               (log) => 
                 log.task_id === task.id && 
                 log.completed_at.startsWith(today) && 
                 log.is_completed
             )
-          ).length;
+          }));
+          
+          const completedTodayCount = tasksWithStatus.filter(t => t.isCompletedToday).length;
+          
+          let completedDates: string[] = [];
+          let streak = 0;
+          
+          if (siloType === 'recurring' && siloTasks.length > 0) {
+            const allLogs = state.taskLogs.filter(log => log.is_completed);
+            const siloTaskIds = new Set(siloTasks.map(t => t.id));
+            
+            const logsByDate = new Map<string, TaskLog[]>();
+            allLogs.forEach(log => {
+              const dateStr = log.completed_at.split('T')[0];
+              if (!logsByDate.has(dateStr)) {
+                logsByDate.set(dateStr, []);
+              }
+              logsByDate.get(dateStr)!.push(log);
+            });
+            
+            const perfectDates: string[] = [];
+            logsByDate.forEach((logs, dateStr) => {
+              const completedTaskIds = new Set(logs.map(l => l.task_id));
+              const allCompleted = [...siloTaskIds].every(taskId => 
+                completedTaskIds.has(taskId)
+              );
+              
+              if (allCompleted) {
+                perfectDates.push(dateStr);
+              }
+            });
+            
+            completedDates = perfectDates.sort();
+            streak = calculateStreak(completedDates, siloTasks.length);
+          }
           
           return {
             ...silo,
@@ -311,15 +403,9 @@ export const useDataStore = create<DataState>()(
               : 0,
             completedCount: completedTodayCount,
             totalCount: siloTasks.length,
-            tasks: siloTasks.map((task) => ({
-              ...task,
-              isCompletedToday: state.taskLogs.some(
-                (log) => 
-                  log.task_id === task.id && 
-                  log.completed_at.startsWith(today) && 
-                  log.is_completed
-              )
-            }))
+            tasks: tasksWithStatus,
+            streak,
+            completedDates,
           };
         });
       },
@@ -329,7 +415,10 @@ export const useDataStore = create<DataState>()(
         const today = getToday();
         const siloTasks = Array.isArray(state.tasks[siloId]) ? state.tasks[siloId] : [];
         
-        return siloTasks.map((task) => ({
+        const silo = state.silos.find(s => s.id === siloId);
+        const siloType = (silo as any)?.silo_type || 'recurring';
+        
+        const tasksWithStatus = siloTasks.map((task) => ({
           ...task,
           isCompletedToday: state.taskLogs.some(
             (log) => 
@@ -338,6 +427,17 @@ export const useDataStore = create<DataState>()(
               log.is_completed
           )
         }));
+        
+        if (siloType === 'one-time') {
+          const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+          return tasksWithStatus.sort((a, b) => {
+            const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+            if (priorityDiff !== 0) return priorityDiff;
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          });
+        }
+        
+        return tasksWithStatus;
       },
 
       getHeatmapData: () => {

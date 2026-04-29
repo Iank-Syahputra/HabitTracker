@@ -11,13 +11,14 @@ export interface Silo {
   icon: string;
   color_theme: string;
   created_at: string;
+  silo_type: 'recurring' | 'one-time';
 }
 
 export interface Task {
   id: string;
   category_id: string;
   title: string;
-  task_type: 'daily' | 'checklist';
+  priority: 'high' | 'medium' | 'low';
   created_at: string;
   order: number;
 }
@@ -34,6 +35,8 @@ export interface SiloWithProgress extends Silo {
   completedCount: number;
   totalCount: number;
   tasks: TaskWithStatus[];
+  streak: number;
+  completedDates: string[];
 }
 
 export interface TaskWithStatus extends Task {

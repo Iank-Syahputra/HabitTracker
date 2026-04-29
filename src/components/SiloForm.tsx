@@ -23,16 +23,18 @@ export function SiloForm({ isOpen, onClose, onSubmit, initialData }: SiloFormPro
   const [name, setName] = useState(initialData?.name || '');
   const [icon, setIcon] = useState(initialData?.icon || 'star');
   const [color, setColor] = useState(initialData?.color_theme || '#6366f1');
+  const [siloType, setSiloType] = useState<'recurring' | 'one-time'>(initialData?.silo_type || 'recurring');
   const [iconOpen, setIconOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSubmit({ name: name.trim(), icon, color_theme: color });
+    onSubmit({ name: name.trim(), icon, color_theme: color, silo_type: siloType });
     setName('');
     setIcon('star');
     setColor('#6366f1');
+    setSiloType('recurring');
     onClose();
   };
 
@@ -149,6 +151,39 @@ export function SiloForm({ isOpen, onClose, onSubmit, initialData }: SiloFormPro
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">Type</label>
+                <div className="flex rounded-xl border border-white/10 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setSiloType('recurring')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
+                      siloType === 'recurring'
+                        ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+                        : 'bg-slate-800/50 text-muted-foreground hover:bg-slate-700/50'
+                    }`}
+                  >
+                    🔄 Recurring
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSiloType('one-time')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
+                      siloType === 'one-time'
+                        ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'
+                        : 'bg-slate-800/50 text-muted-foreground hover:bg-slate-700/50'
+                    }`}
+                  >
+                    📋 One-time
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {siloType === 'recurring'
+                    ? 'For habits that repeat daily, weekly, or monthly'
+                    : 'For tasks like meetings, assignments, or one-off goals'}
+                </p>
               </div>
 
               <button

@@ -42,6 +42,7 @@ export type Database = {
           icon: string;
           color_theme: string;
           position: number;
+          silo_type: 'recurring' | 'one-time';
           created_at: string;
           updated_at: string;
         };
@@ -52,12 +53,14 @@ export type Database = {
           icon?: string;
           color_theme?: string;
           position?: number;
+          silo_type?: 'recurring' | 'one-time';
         };
         Update: {
           name?: string;
           icon?: string;
           color_theme?: string;
           position?: number;
+          silo_type?: 'recurring' | 'one-time';
           updated_at?: string;
         };
       };
@@ -67,6 +70,7 @@ export type Database = {
           category_id: string;
           title: string;
           task_type: 'daily' | 'checklist';
+          priority: 'high' | 'medium' | 'low';
           position: number;
           is_active: boolean;
           created_at: string;
@@ -76,13 +80,15 @@ export type Database = {
           id?: string;
           category_id: string;
           title: string;
-          task_type: 'daily' | 'checklist';
+          task_type?: 'daily' | 'checklist';
+          priority?: 'high' | 'medium' | 'low';
           position?: number;
           is_active?: boolean;
         };
         Update: {
           title?: string;
           task_type?: 'daily' | 'checklist';
+          priority?: 'high' | 'medium' | 'low';
           position?: number;
           is_active?: boolean;
           updated_at?: string;

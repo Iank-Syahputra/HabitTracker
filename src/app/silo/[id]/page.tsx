@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Sparkles, Loader2, WifiOff } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, WifiOff, CheckCircle2 } from 'lucide-react';
 import { TaskItem } from '@/components/TaskItem';
 import { TaskForm } from '@/components/TaskForm';
 import { Confetti } from '@/components/Confetti';
+import { RecurringCalendar } from '@/components/RecurringCalendar';
 import { useDataStore } from '@/store/useDataStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getIcon, type IconKey } from '@/utils/icons';
@@ -88,17 +89,18 @@ export default function SiloPage() {
   }
 
   const Icon = getIcon(silo.icon as IconKey);
+  const siloType = (silo as any).silo_type || 'recurring';
   const completedCount = tasksForSilo.filter(t => t.isCompletedToday).length;
   const progress = tasksForSilo.length > 0 
     ? Math.round((completedCount / tasksForSilo.length) * 100)
     : 0;
 
-  const handleAddTask = (title: string, taskType: 'daily' | 'checklist') => {
+  const handleAddTask = (title: string, priority: 'high' | 'medium' | 'low') => {
     const newTask: Task = {
       id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       category_id: siloId,
       title,
-      task_type: taskType,
+      priority,
       created_at: new Date().toISOString(),
       order: tasksForSilo.length
     };
@@ -107,6 +109,14 @@ export default function SiloPage() {
 
   const handleToggleTask = (taskId: string) => {
     toggleTaskComplete(taskId);
+  };
+
+  const handleCompleteAll = () => {
+    tasksForSilo.forEach(task => {
+      if (!task.isCompletedToday) {
+        toggleTaskComplete(task.id);
+      }
+    });
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -142,7 +152,9 @@ export default function SiloPage() {
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-foreground">{silo.name}</h1>
               <p className="text-sm text-muted-foreground font-mono">
-                {completedCount}/{tasksForSilo.length} completed
+                {siloType === 'recurring'
+                  ? `${completedCount}/${tasksForSilo.length} completed today`
+                  : `${completedCount}/${tasksForSilo.length} tasks done`}
               </p>
             </div>
             {!isOnline && (
@@ -151,19 +163,21 @@ export default function SiloPage() {
           </div>
         </header>
 
-        <div className="mb-6 h-3 rounded-full bg-slate-800/50 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ 
-              background: progress === 100 
-                ? 'linear-gradient(90deg, #6366F1, #10B981)'
-                : `linear-gradient(90deg, ${silo.color_theme}, ${silo.color_theme}dd)`
-            }}
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          />
-        </div>
+        {siloType === 'one-time' && (
+          <div className="mb-6 h-3 rounded-full bg-slate-800/50 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ 
+                background: progress === 100 
+                  ? 'linear-gradient(90deg, #6366F1, #10B981)'
+                  : `linear-gradient(90deg, ${silo.color_theme}, ${silo.color_theme}dd)`
+              }}
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+            />
+          </div>
+        )}
 
         {isComplete && (
           <motion.div
@@ -178,11 +192,37 @@ export default function SiloPage() {
         )}
 
         <section className="mb-6">
-          <TaskForm onSubmit={handleAddTask} />
+          <TaskForm 
+            onSubmit={handleAddTask} 
+            siloType={siloType}
+          />
         </section>
 
+        {siloType === 'recurring' && siloProgress && (
+          <section className="mb-6">
+            <RecurringCalendar
+              completedDates={siloProgress.completedDates || []}
+              currentStreak={siloProgress.streak || 0}
+              color={silo.color_theme}
+            />
+          </section>
+        )}
+
         <section>
-          <h2 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">Tasks</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              {siloType === 'recurring' ? 'Today\'s Tasks' : 'Tasks'}
+            </h2>
+            {tasksForSilo.length > 0 && tasksForSilo.some(t => !t.isCompletedToday) && (
+              <button
+                onClick={handleCompleteAll}
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Complete All
+              </button>
+            )}
+          </div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />

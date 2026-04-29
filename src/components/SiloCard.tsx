@@ -19,6 +19,8 @@ export function SiloCard({ silo, onClick, onLongPress }: SiloCardProps) {
   
   const innerGlowClass = isEmerald ? 'inner-glow-emerald' : isIndigo ? 'inner-glow-indigo' : '';
   
+  const siloType = (silo as any).silo_type || 'recurring';
+  
   const handleContextMenu = (e: React.MouseEvent) => {
     if (onLongPress) {
       e.preventDefault();
@@ -30,6 +32,12 @@ export function SiloCard({ silo, onClick, onLongPress }: SiloCardProps) {
     if (navigator.vibrate) {
       navigator.vibrate(10);
     }
+  };
+
+  const priorityCount = {
+    high: silo.tasks.filter(t => t.priority === 'high' && !t.isCompletedToday).length,
+    medium: silo.tasks.filter(t => t.priority === 'medium' && !t.isCompletedToday).length,
+    low: silo.tasks.filter(t => t.priority === 'low' && !t.isCompletedToday).length,
   };
   
   return (
@@ -67,15 +75,69 @@ export function SiloCard({ silo, onClick, onLongPress }: SiloCardProps) {
       </div>
       
       <h3 className="mb-1 text-lg font-semibold text-foreground">{silo.name}</h3>
-      <p className="text-sm text-muted-foreground font-mono">
-        {silo.completedCount}/{silo.totalCount} tasks completed
-      </p>
       
-      <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800/50">
+      {siloType === 'recurring' ? (
+        <>
+          <p className="text-sm text-muted-foreground font-mono">
+            {silo.completedCount}/{silo.totalCount} tasks today
+          </p>
+          
+          {silo.streak >= 7 && (
+            <div className="mt-2 flex items-center gap-1 text-sm font-medium text-orange-400">
+              <span>🔥</span>
+              <span>{silo.streak} day streak</span>
+            </div>
+          )}
+
+          <div className="mt-2 flex gap-2">
+            {priorityCount.high > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-400">
+                🔴 {priorityCount.high}
+              </span>
+            )}
+            {priorityCount.medium > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-400">
+                🟡 {priorityCount.medium}
+              </span>
+            )}
+            {priorityCount.low > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
+                🟢 {priorityCount.low}
+              </span>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground font-mono">
+            {silo.completedCount}/{silo.totalCount} tasks done
+          </p>
+          
+          <div className="mt-2 flex gap-2">
+            {priorityCount.high > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-400">
+                🔴 {priorityCount.high}
+              </span>
+            )}
+            {priorityCount.medium > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-400">
+                🟡 {priorityCount.medium}
+              </span>
+            )}
+            {priorityCount.low > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
+                🟢 {priorityCount.low}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+      
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-800/50">
         <motion.div
           className={`h-full rounded-full ${silo.progress > 80 ? 'progress-pulse' : ''}`}
           style={{ 
-            background: `linear-gradient(90deg, #6366F1, #10B981)` 
+            background: `linear-gradient(90deg, ${progressColor}, ${progressColor}dd)` 
           }}
           initial={{ width: 0 }}
           animate={{ width: `${silo.progress}%` }}

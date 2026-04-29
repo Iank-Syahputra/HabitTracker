@@ -73,15 +73,25 @@ export function TaskItem({ task, color, onToggle, onDelete }: TaskItemProps) {
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-1">
-          {task.task_type === 'daily' ? (
+          {task.priority === 'high' && (
+            <span className="flex items-center gap-1 text-xs text-red-400">
+              🔴 High
+            </span>
+          )}
+          {task.priority === 'medium' && (
+            <span className="flex items-center gap-1 text-xs text-yellow-400">
+              🟡 Medium
+            </span>
+          )}
+          {task.priority === 'low' && (
+            <span className="flex items-center gap-1 text-xs text-green-400">
+              🟢 Low
+            </span>
+          )}
+          {!task.priority && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               Daily
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <ListChecks className="h-3 w-3" />
-              Checklist
             </span>
           )}
         </div>

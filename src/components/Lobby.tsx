@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Flame, X, Settings, Edit2, Trash2, LogOut, Loader2, WifiOff } from 'lucide-react';
 import { SiloCard } from '@/components/SiloCard';
 import { SiloForm } from '@/components/SiloForm';
-import { ContributionHeatmap } from '@/components/ContributionHeatmap';
 import { Confetti } from '@/components/Confetti';
 import { useDataStore } from '@/store/useDataStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -17,7 +16,6 @@ export function Lobby() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSilo, setEditingSilo] = useState<Silo | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [heatmapExpanded, setHeatmapExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const prevProgressRef = useRef<Record<string, number>>({});
 
@@ -28,7 +26,6 @@ export function Lobby() {
     updateSilo,
     deleteSilo,
     getSilosWithProgress,
-    getHeatmapData,
     isOnline,
     isLoading,
     isSyncing,
@@ -36,7 +33,6 @@ export function Lobby() {
   } = useDataStore();
 
   const silosWithProgress = getSilosWithProgress();
-  const heatmapData = getHeatmapData();
 
   useEffect(() => {
     const init = async () => {
@@ -77,7 +73,8 @@ export function Lobby() {
       name: siloData.name,
       icon: siloData.icon || 'star',
       color_theme: siloData.color_theme || '#6366f1',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      silo_type: siloData.silo_type || 'recurring'
     };
     addSilo(newSilo);
   };
@@ -245,35 +242,6 @@ export function Lobby() {
               </motion.button>
             </div>
           )}
-        </section>
-
-        <section>
-          <button
-            onClick={() => setHeatmapExpanded(!heatmapExpanded)}
-            className="mb-4 flex w-full items-center justify-between"
-          >
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Contribution Activity</h2>
-            <svg
-              className={`h-4 w-4 text-muted-foreground transition-transform ${heatmapExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <AnimatePresence>
-            {heatmapExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden rounded-xl glass-card border border-white/10 p-4"
-              >
-                <ContributionHeatmap data={heatmapData} />
-              </motion.div>
-            )}
-          </AnimatePresence>
         </section>
       </div>
 

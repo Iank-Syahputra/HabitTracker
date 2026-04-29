@@ -29,6 +29,36 @@ interface AppState {
 
 const getToday = () => new Date().toISOString().split('T')[0];
 
+function calculateStreak(completedDates: string[], totalTasks: number): number {
+  if (completedDates.length === 0 || totalTasks === 0) return 0;
+  
+  const sortedDates = [...completedDates].sort().reverse();
+  const today = getToday();
+  
+  let streak = 0;
+  let currentDate = new Date(today);
+  const todayStr = today;
+  
+  const hasCompletedToday = sortedDates.includes(todayStr);
+  if (!hasCompletedToday) {
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+  
+  for (let i = 0; i < sortedDates.length; i++) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const index = sortedDates.indexOf(dateStr);
+    
+    if (index !== -1) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  
+  return streak;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -98,7 +128,7 @@ export const useAppStore = create<AppState>()(
           const newLog: TaskLog = {
             id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             task_id: taskId,
-            completed_at: `${date}T00:00:00.000Z`,
+            completed_at: new Date().toISOString(),
             is_completed: true
           };
           return { taskLogs: [...state.taskLogs, newLog] };
@@ -111,6 +141,7 @@ export const useAppStore = create<AppState>()(
         
         return state.silos.map((silo) => {
           const siloTasks = state.tasks[silo.id] || [];
+          const siloType = (silo as any).silo_type || 'recurring';
           const completedToday = siloTasks.filter((task) => 
             state.taskLogs.some(
               (log) => 
@@ -119,6 +150,38 @@ export const useAppStore = create<AppState>()(
                 log.is_completed
             )
           ).length;
+          
+          let completedDates: string[] = [];
+          let streak = 0;
+          
+          if (siloType === 'recurring' && siloTasks.length > 0) {
+            const allLogs = state.taskLogs.filter(log => log.is_completed);
+            const siloTaskIds = new Set(siloTasks.map(t => t.id));
+            
+            const logsByDate = new Map<string, TaskLog[]>();
+            allLogs.forEach(log => {
+              const dateStr = log.completed_at.split('T')[0];
+              if (!logsByDate.has(dateStr)) {
+                logsByDate.set(dateStr, []);
+              }
+              logsByDate.get(dateStr)!.push(log);
+            });
+            
+            const perfectDates: string[] = [];
+            logsByDate.forEach((logs, dateStr) => {
+              const completedTaskIds = new Set(logs.map(l => l.task_id));
+              const allCompleted = [...siloTaskIds].every(taskId => 
+                completedTaskIds.has(taskId)
+              );
+              
+              if (allCompleted) {
+                perfectDates.push(dateStr);
+              }
+            });
+            
+            completedDates = perfectDates.sort();
+            streak = calculateStreak(completedDates, siloTasks.length);
+          }
           
           return {
             ...silo,
@@ -135,7 +198,9 @@ export const useAppStore = create<AppState>()(
                   log.completed_at.startsWith(today) && 
                   log.is_completed
               )
-            }))
+            })),
+            streak,
+            completedDates,
           };
         });
       },
