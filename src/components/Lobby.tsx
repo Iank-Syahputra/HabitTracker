@@ -136,6 +136,13 @@ export function Lobby() {
               </div>
             )}
             {isSyncing && <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />}
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg hover:shadow-emerald-500/25"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Silo</span>
+            </button>
             <div className="flex items-center gap-2 rounded-full glass-card px-4 py-2 border border-white/10">
               <Flame className="h-5 w-5 text-orange-500" />
               <span className="font-bold font-mono text-foreground">{streak}</span>
@@ -231,15 +238,6 @@ export function Lobby() {
                   </div>
                 </motion.div>
               ))}
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setIsFormOpen(true)}
-                className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 py-8 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/5"
-              >
-                <Plus className="mb-2 h-8 w-8 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Add Silo</span>
-              </motion.button>
             </div>
           )}
         </section>
