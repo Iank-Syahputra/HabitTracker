@@ -8,6 +8,7 @@ import { TaskItem } from '@/components/TaskItem';
 import { TaskForm } from '@/components/TaskForm';
 import { Confetti } from '@/components/Confetti';
 import { RecurringCalendar } from '@/components/RecurringCalendar';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useDataStore } from '@/store/useDataStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getIcon, type IconKey } from '@/utils/icons';
@@ -19,6 +20,7 @@ export default function SiloPage() {
   const siloId = params.id as string;
   
   const [showConfetti, setShowConfetti] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, taskId: string | null, taskTitle: string | null}>({show: false, taskId: null, taskTitle: null});
   const prevProgressRef = useRef(0);
 
   const { user, initialize } = useAuthStore();
@@ -120,8 +122,14 @@ export default function SiloPage() {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    if (confirm('Delete this task?')) {
-      deleteTask(siloId, taskId);
+    const task = tasksForSilo.find(t => t.id === taskId);
+    setDeleteConfirm({show: true, taskId, taskTitle: task?.title || null});
+  };
+
+  const confirmDeleteTask = () => {
+    if (deleteConfirm.taskId) {
+      deleteTask(siloId, deleteConfirm.taskId);
+      setDeleteConfirm({show: false, taskId: null, taskTitle: null});
     }
   };
 
@@ -253,6 +261,17 @@ export default function SiloPage() {
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.show}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${deleteConfirm.taskTitle}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteTask}
+        onCancel={() => setDeleteConfirm({show: false, taskId: null, taskTitle: null})}
+        variant="danger"
+      />
     </div>
   );
 }

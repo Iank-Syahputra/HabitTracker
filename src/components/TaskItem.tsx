@@ -99,7 +99,7 @@ export function TaskItem({ task, color, onToggle, onDelete }: TaskItemProps) {
 
       <button
         onClick={onDelete}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground sm:opacity-0 sm:hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
       >
         <Trash2 className="h-4 w-4" />
       </button>

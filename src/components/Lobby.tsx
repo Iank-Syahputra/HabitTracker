@@ -7,6 +7,7 @@ import { Plus, Flame, X, Settings, Edit2, Trash2, LogOut, Loader2, WifiOff } fro
 import { SiloCard } from '@/components/SiloCard';
 import { SiloForm } from '@/components/SiloForm';
 import { Confetti } from '@/components/Confetti';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useDataStore } from '@/store/useDataStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Silo, SiloWithProgress } from '@/types';
@@ -17,6 +18,7 @@ export function Lobby() {
   const [editingSilo, setEditingSilo] = useState<Silo | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, silo: SiloWithProgress | null}>({show: false, silo: null});
   const prevProgressRef = useRef<Record<string, number>>({});
 
   const { user, loading: authLoading, signOut, initialize } = useAuthStore();
@@ -91,8 +93,13 @@ export function Lobby() {
   };
 
   const handleDeleteSilo = (silo: SiloWithProgress) => {
-    if (confirm(`Delete "${silo.name}"? This can't be undone.`)) {
-      deleteSilo(silo.id);
+    setDeleteConfirm({show: true, silo});
+  };
+
+  const confirmDeleteSilo = () => {
+    if (deleteConfirm.silo) {
+      deleteSilo(deleteConfirm.silo.id);
+      setDeleteConfirm({show: false, silo: null});
     }
   };
 
@@ -215,14 +222,14 @@ export function Lobby() {
                       setIsFormOpen(true);
                     }}
                   />
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute top-2 right-2 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingSilo(silo);
                         setIsFormOpen(true);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 border border-white/10 shadow-sm transition-colors hover:bg-slate-700"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/90 border border-white/10 shadow-sm transition-colors hover:bg-slate-700"
                     >
                       <Edit2 className="h-4 w-4 text-muted-foreground" />
                     </button>
@@ -231,7 +238,7 @@ export function Lobby() {
                         e.stopPropagation();
                         handleDeleteSilo(silo);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 border border-white/10 shadow-sm transition-colors hover:bg-destructive/20 hover:text-destructive"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/90 border border-white/10 shadow-sm transition-colors hover:bg-destructive/20 hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -251,6 +258,17 @@ export function Lobby() {
         }}
         onSubmit={editingSilo ? handleUpdateSilo : handleCreateSilo}
         initialData={editingSilo || undefined}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.show}
+        title="Delete Silo"
+        message={`Are you sure you want to delete "${deleteConfirm.silo?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteSilo}
+        onCancel={() => setDeleteConfirm({show: false, silo: null})}
+        variant="danger"
       />
     </div>
   );
